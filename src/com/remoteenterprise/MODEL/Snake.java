@@ -14,15 +14,9 @@ public class Snake {
 	private Snake() {
 		this.alive = true;
 		this.snake = new Vector<>();
-		this.position = new Vector2f(0,0);
+		this.position = new Vector2f(50,50);
 		this.snake.add(new Block());
-		this.snake.get(0).setPosition(30, 0);
-		this.snake.add(new Block());
-		this.snake.get(1).setPosition(20, 0);
-		this.snake.add(new Block());
-		this.snake.get(2).setPosition(10, 0);
-		this.snake.add(new Block());
-		this.snake.get(3).setPosition(0, 0);
+		this.snake.get(0).setPosition(50, 50);
 	}
 
 	public boolean isAlive() {
@@ -51,5 +45,15 @@ public class Snake {
 	
 	public static Snake getInstance() {
 		return Snake.uniqueInstance;
+	}
+	
+	public boolean colidiu(Vector2f posicao) {
+		for(int i = 0; i < this.snake.size(); i++) {
+			if(posicao.x == this.snake.get(i).getPosition().x && 
+					posicao.y == this.snake.get(i).getPosition().y) {
+				return true;
+			}
+		}
+		return false;
 	}
 }
