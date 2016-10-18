@@ -7,6 +7,7 @@ import org.newdawn.slick.geom.Vector2f;
 
 public class Block {
 	private Char block;
+	private Upgrade upgrade;
 	private Vector2f position;
 	private static LinkedList<Integer> posicoes = gerarPosicoes();
 	
@@ -33,6 +34,14 @@ public class Block {
 		return String.valueOf(this.block.getC());
 	}
 	
+	public Upgrade getUpgrade() {
+		return upgrade;
+	}
+
+	public void setUpgrade(Upgrade upgrade) {
+		this.upgrade = upgrade;
+	}
+
 	private static LinkedList<Integer> gerarPosicoes() {
 		LinkedList<Integer> posicoes = new LinkedList<>();
 		for(int i = 20; i < 460; i+=10) {

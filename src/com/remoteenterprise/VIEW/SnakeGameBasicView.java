@@ -12,19 +12,21 @@ import org.newdawn.slick.geom.Vector2f;
 
 import com.remoteenterprise.MODEL.Block;
 import com.remoteenterprise.MODEL.Snake;
+import com.remoteenterprise.MODEL.Upgrade;
+import com.remoteenterprise.MODEL.UpgradeUpSpeedStrategy;
 import com.remoteenterprise.MODEL.Wall;
 
 public class SnakeGameBasicView extends BasicGame {
 	private Snake snake;
 
-	private Block block;
-	private Vector2f posicaoBlock;
+	private Block block, blockUpgrade;
+	private Vector2f posicaoBlock, posicaoBlockUpgrade;
 	
-	private boolean gerarBlock, colidiuComElaMesma, colidiuParede;
+	private boolean gerarBlock, gerarUpgrade, colidiuComElaMesma, colidiuParede;
 	
-	private int x = 50, y = 50, vaiMovimentar;
+	private int x = 50, y = 50, vaiMovimentar, prox = 10;
 	
-	private static final int DELAY = 100, DELAY_KEY = 100;
+	//private static final int DELAY = 100, DELAY_KEY = 100;
 	
 	private Wall[] paredes;
 	
@@ -34,7 +36,8 @@ public class SnakeGameBasicView extends BasicGame {
 						BAIXO("BAIXO"),
 						ESQUERDA("ESQUERDA"),
 						DIREITA("DIREITA"),
-						NENHUMA("NENHUMA");
+						NENHUMA("NENHUMA"),
+						ESPACO("ESPACO");
 		private String tecla;
 		private Tecla(String tecla) {
 			this.tecla = tecla;
@@ -59,6 +62,7 @@ public class SnakeGameBasicView extends BasicGame {
 				g.fillRect(this.paredes[i].getPosicao().x, this.paredes[i].getPosicao().y,
 						this.paredes[i].getLargura(), this.paredes[i].getAltura());
 			}
+			
 			for(int i = 20; i <= 480; i+=10) {
 				g.setColor(Color.black);
 				g.drawRect(i, 20, 0, 460);
@@ -67,7 +71,8 @@ public class SnakeGameBasicView extends BasicGame {
 				g.setColor(Color.black);
 				g.drawRect(20, i, 460, 0);
 			}
-			for(int i = this.snake.getSnake().size()-1; i >= 0 ; i--) {
+			
+			for(int i = 0; i < this.snake.getSnake().size() ; i++) {
 				if(i == 0) {
 					g.setColor(Color.red);
 					g.fillRect(this.snake.getSnake().get(i).getPosition().x,
@@ -75,6 +80,7 @@ public class SnakeGameBasicView extends BasicGame {
 					//g.drawString(this.snake.getSnake().get(i).toString(),
 						//	this.snake.getSnake().get(i).getPosition().getX(),
 							//this.snake.getSnake().get(i).getPosition().getY());
+			
 				} else {
 					g.setColor(Color.white);
 					g.fillRect(this.snake.getSnake().get(i).getPosition().x,
@@ -92,6 +98,18 @@ public class SnakeGameBasicView extends BasicGame {
 				this.block = new Block();
 				this.posicaoBlock = this.block.getPosition();
 				this.gerarBlock = false;
+			}
+			
+			if(this.gerarUpgrade) {
+				this.blockUpgrade = new Block();
+				this.blockUpgrade.setUpgrade(new Upgrade("u", 1, new UpgradeUpSpeedStrategy()));
+				this.posicaoBlockUpgrade = this.blockUpgrade.getPosition();
+				this.gerarUpgrade = false;
+			}
+			
+			if(!this.gerarUpgrade && this.blockUpgrade != null) {
+				g.setColor(Color.red);
+				g.fillRect(this.blockUpgrade.getPosition().x, this.blockUpgrade.getPosition().y, 10, 10);
 			}
 			
 			if(!this.gerarBlock) {
@@ -120,6 +138,7 @@ public class SnakeGameBasicView extends BasicGame {
 		this.vaiMovimentar = this.snake.getSnake().size()-1;
 		this.gerarBlock = true;
 		this.geradorGeral = new Random();
+		this.gerarUpgrade = this.geradorGeral.nextBoolean();
 		this.background = new Color(118,255,3);
 		this.paredes = new Wall[4];
 		this.paredes[0] = new Wall(0,0,500,20); //Left
@@ -131,7 +150,7 @@ public class SnakeGameBasicView extends BasicGame {
 	@Override
 	public void update(GameContainer gc, int delta) throws SlickException {
 		if(!this.colidiuComElaMesma && !this.colidiuParede){
-			if(this.tempoKey >= SnakeGameBasicView.DELAY_KEY) {
+			if(this.tempoKey >= this.snake.getSpeedKey()) {
 				this.definirDirecao(gc, delta);
 				this.tempoKey = 0;
 			} else {
@@ -142,8 +161,9 @@ public class SnakeGameBasicView extends BasicGame {
 			case("NENHUMA"):
 				break;
 			case("DIREITA"):
-				if(this.tempoDecorrido >= SnakeGameBasicView.DELAY) {
+				if(this.tempoDecorrido >= this.snake.getSpeed()) {
 					x+=10;
+					this.prox = 10;
 					this.movimentar();
 					this.tempoDecorrido = 0;
 				} else {
@@ -151,8 +171,9 @@ public class SnakeGameBasicView extends BasicGame {
 				}
 			break;
 			case("BAIXO"):
-				if(this.tempoDecorrido >= SnakeGameBasicView.DELAY) {
+				if(this.tempoDecorrido >= this.snake.getSpeed()) {
 					y+=10;
+					this.prox = 10;
 					this.movimentar();
 					this.tempoDecorrido = 0;
 				} else {
@@ -160,8 +181,9 @@ public class SnakeGameBasicView extends BasicGame {
 				}
 			break;
 			case("ESQUERDA"):
-				if(this.tempoDecorrido >= SnakeGameBasicView.DELAY) {
+				if(this.tempoDecorrido >= this.snake.getSpeed()) {
 					x-=10;
+					this.prox = -10;
 					this.movimentar();
 					this.tempoDecorrido = 0;
 				} else {
@@ -169,22 +191,38 @@ public class SnakeGameBasicView extends BasicGame {
 				}
 			break;
 			case("CIMA"):
-				if(this.tempoDecorrido >= SnakeGameBasicView.DELAY) {
-					y-=10;				
+				if(this.tempoDecorrido >= this.snake.getSpeed()) {
+					y-=10;	
+					this.prox = -10;
 					this.movimentar();
 					this.tempoDecorrido = 0;
 				} else {
 					this.tempoDecorrido += delta;
 				}
 			break;
-	 		}
+	 		}	
+		}
+		if(this.colidiuComElaMesma || this.colidiuParede) {
+			this.definirDirecao(gc, delta);
+			if(this.teclaPressionada.equals("ESPACO")) {
+				this.colidiuComElaMesma = false;
+				this.colidiuParede = false;
+				this.x = 50;
+				this.y = 50;
+				this.teclaPressionada = Tecla.NENHUMA.tecla;
+				this.snake.reset();
+			}
 		}
 		
 	}
+	
 	public void definirDirecao(GameContainer gc, int delta) {
 		Input input = gc.getInput();
+		if(input.isKeyPressed(Input.KEY_SPACE)) {
+			this.teclaPressionada = Tecla.ESPACO.tecla;
+		}
 		if(!this.colidiuComElaMesma && !this.colidiuParede){
-			if(this.tempoKey >= SnakeGameBasicView.DELAY_KEY) {
+			if(this.tempoKey >= this.snake.getSpeedKey()) {
 					if(input.isKeyPressed(Input.KEY_RIGHT)) {
 						if(!this.teclaPressionada.equals("ESQUERDA")){
 							this.teclaPressionada = Tecla.DIREITA.tecla;
@@ -235,5 +273,18 @@ public class SnakeGameBasicView extends BasicGame {
 					this.geradorGeral.nextInt(255));
 			this.gerarBlock = true;
 		}
+		
+		if(this.blockUpgrade != null) {
+			if(this.snake.getSnake().get(this.vaiMovimentar+1).getPosition().x == this.blockUpgrade.getPosition().x &&
+					this.snake.getSnake().get(this.vaiMovimentar+1).getPosition().y == this.blockUpgrade.getPosition().y) {
+				this.snake.setUpgrade(this.blockUpgrade.getUpgrade());
+				this.snake.getUpgrade().getUpgradeStrategy().upgrade(this.snake);
+				this.background = new Color(this.geradorGeral.nextInt(255),
+						this.geradorGeral.nextInt(255),
+						this.geradorGeral.nextInt(255));
+				this.gerarUpgrade = this.geradorGeral.nextBoolean();
+			}
+		}
+		
 	}
 }
